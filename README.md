@@ -24,11 +24,7 @@ A web-based application for managing class schedules, student attendance, and su
 
 This system was designed to solve the chaotic nature of managing multiple class schedules manually. By implementing a centralized and automated platform, university staff and students can easily manage their timetable, track attendance, and reduce errors or duplication.
 
-## 📸 Screenshots
 
-🖼 Add them manually via GitHub after pushing! (Go to the repo → drag image into the README file → GitHub will generate the markdown snippet to insert here!)
-
----
 
 ## 📂 Project Structure
 
