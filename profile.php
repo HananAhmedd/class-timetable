@@ -84,7 +84,7 @@ $email = $_SESSION['email'];
       box-shadow: 0 8px 30px rgba(0,0,0,0.3);
     }
     .profile-card button.logout {
-      background-color: #e53935;
+      background-color:rgb(163, 26, 23);
       color: #fff;
     }
     .profile-card button.logout:hover {

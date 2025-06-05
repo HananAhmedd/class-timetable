@@ -9,26 +9,27 @@ $name = $_SESSION['name'];
 $initial = strtoupper($name[0]);
 
 require 'db.php';
-$today = date('l');
 
 $sql = "
 SELECT 
+  c.id AS course_id,
   c.name AS course_name, 
   u.name AS instructor, 
-  c.department, 
-  c.semester, 
   t.day_of_week, 
   t.start_time, 
   t.end_time, 
   t.room_number,
-  t.id as timetable_id
+  t.id AS timetable_id
 FROM timetables t
 JOIN courses c ON t.course_id = c.id
 JOIN users u ON t.teacher_id = u.id
 ORDER BY t.day_of_week, t.start_time;
 ";
+
 $result = $conn->query($sql);
+$todayName = strtolower(date('l'));
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -46,36 +47,15 @@ $result = $conn->query($sql);
       min-height: 100vh;
       padding: 20px;
     }
-    .attendance-container {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 20px;
-      padding: 30px;
-      margin-bottom: 40px;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-    }
     .attendance-card {
       background: rgba(255, 255, 255, 0.15);
       padding: 20px;
       border-radius: 15px;
       margin-bottom: 20px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-      transition: all 0.3s ease;
-      cursor: pointer;
     }
-    .attendance-card:hover {
-      background: #5e49d8;
-      transform: scale(1.05);
-      color: #fff;
-      box-shadow: 0 12px 25px rgba(0,0,0,0.3);
-    }
-    .attendance-card h4 {
-      margin-bottom: 5px;
-    }
-    .attendance-card p {
-      color: #ddd;
-      font-size: 0.9rem;
-      font-weight: 500;
-    }
+    .attendance-card h4 { margin-bottom: 5px; }
+    .attendance-card p { color: #ddd; }
     .attendance-card button {
       background-color: #00c853;
       color: #fff;
@@ -84,95 +64,112 @@ $result = $conn->query($sql);
       border-radius: 8px;
       font-weight: bold;
       cursor: pointer;
-      transition: all 0.3s ease;
       margin-top: 10px;
-    }
-    .attendance-card button:hover {
-      background-color: #00a152;
     }
     .attendance-card button:disabled {
       background-color: #777;
       cursor: not-allowed;
     }
     footer {
-      margin-top: 20px;
-      padding: 20px 0;
-      background-color: #00274C;
-      color: #ccc;
+      margin-top: 30px;
+      background: #00274C;
       text-align: center;
-      box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.5);
-    }
-    footer a {
+      padding: 15px;
       color: #ccc;
-      margin: 0 10px;
-      text-decoration: none;
     }
-    footer a:hover {
-      color: #fff;
+    footer a { color: #ccc; margin: 0 10px; }
+
+    #message-box {
+      position: fixed;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #00c853;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: bold;
+      display: none;
+      z-index: 9999;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
   </style>
 </head>
 <body>
 
-<div class="attendance-container">
-  <h2>📅 Check In for Your Classes</h2>
-  <?php while ($row = $result->fetch_assoc()): ?>
-    <div class="attendance-card" id="attendance-<?php echo base64_encode($row['course_name']); ?>">
-      <h4><?php echo htmlspecialchars($row['course_name']); ?></h4>
-      <p><strong>Instructor:</strong> <?php echo htmlspecialchars($row['instructor']); ?></p>
-      <p><strong>Day:</strong> <?php echo htmlspecialchars($row['day_of_week']); ?></p>
-      <p><strong>Time:</strong> <?php echo date("h:i A", strtotime($row['start_time'])); ?> - <?php echo date("h:i A", strtotime($row['end_time'])); ?></p>
-      <p><strong>Room:</strong> <?php echo htmlspecialchars($row['room_number']); ?></p>
+<h2>📅 Check In for Your Classes</h2>
 
-      <?php
-        $todayName = strtolower(date('l'));
-        $classDay = strtolower($row['day_of_week']);
-      ?>
+<!-- Placeholder for success message -->
+<div id="message-box"></div>
 
-      <?php if ($todayName === $classDay): ?>
-        <button onclick="markAttendance('<?php echo $row['course_name']; ?>', <?php echo $row['timetable_id']; ?>)">Mark Attendance</button>
-      <?php else: ?>
-        <button disabled>🚫 Not Today</button>
-      <?php endif; ?>
-    </div>
-  <?php endwhile; ?>
-</div>
+<?php while ($row = $result->fetch_assoc()): 
+  $classDay = strtolower($row['day_of_week']);
+  $courseId = $row['course_id'];
+  $timetableId = $row['timetable_id'];
+  $encodedId = base64_encode("{$courseId}_{$timetableId}");
+?>
+  <div class="attendance-card" id="attendance-<?php echo $encodedId; ?>">
+    <h4><?php echo htmlspecialchars($row['course_name']); ?></h4>
+    <p><strong>Instructor:</strong> <?php echo htmlspecialchars($row['instructor']); ?></p>
+    <p><strong>Day:</strong> <?php echo htmlspecialchars($row['day_of_week']); ?></p>
+    <p><strong>Time:</strong> <?php echo date("h:i A", strtotime($row['start_time'])) . " - " . date("h:i A", strtotime($row['end_time'])); ?></p>
+    <p><strong>Room:</strong> <?php echo htmlspecialchars($row['room_number']); ?></p>
+
+    <?php if ($todayName === $classDay): ?>
+      <button onclick="markAttendance(<?php echo $courseId; ?>, <?php echo $timetableId; ?>)">Mark Attendance</button>
+    <?php else: ?>
+      <button disabled>🚫 Not Today</button>
+    <?php endif; ?>
+  </div>
+<?php endwhile; ?>
 
 <footer>
   <p>&copy; 2025 University of Messina - Student Attendance Panel</p>
   <div>
-    <a href="https://instagram.com" target="_blank"><i class="fab fa-instagram"></i> Instagram</a>
-    <a href="https://youtube.com" target="_blank"><i class="fab fa-youtube"></i> YouTube</a>
-    <a href="https://www.unime.it" target="_blank"><i class="fas fa-globe"></i> Website</a>
+    <a href="#"><i class="fab fa-instagram"></i> Instagram</a>
+    <a href="#"><i class="fab fa-youtube"></i> YouTube</a>
+    <a href="#"><i class="fas fa-globe"></i> Website</a>
     <a href="#"><i class="fas fa-question-circle"></i> Help</a>
   </div>
 </footer>
 
 <script>
-function markAttendance(courseName, timetableId) {
+function showMessage(msg, isError = false) {
+  const box = document.getElementById("message-box");
+  box.textContent = msg;
+  box.style.backgroundColor = isError ? "#e53935" : "#00c853";
+  box.style.display = "block";
+  setTimeout(() => {
+    box.style.display = "none";
+  }, 2500);
+}
+
+function markAttendance(courseId, timetableId) {
+  const encodedId = btoa(`${courseId}_${timetableId}`);
   fetch("mark_attendance.php", {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded"
     },
-    body: `course=${encodeURIComponent(courseName)}&timetable_id=${timetableId}`
+    body: `course_id=${encodeURIComponent(courseId)}&timetable_id=${encodeURIComponent(timetableId)}`
   })
   .then(res => res.json())
   .then(data => {
     if (data.success) {
-      const encodedId = btoa(courseName);
       const card = document.getElementById(`attendance-${encodedId}`);
       const button = card.querySelector("button");
       button.textContent = "✅ Marked Present";
       button.disabled = true;
       button.style.backgroundColor = "#00897b";
+      showMessage("✅ You’ve successfully marked your attendance!");
     } else {
-      alert("❌ " + data.message);
+      const msg = data.message || "Something went wrong.";
+      showMessage("❌ " + msg, true);
     }
   })
   .catch((error) => {
     console.error("Network ERROR:", error);
-    alert("⚠️ Network error. Please try again.");
+    showMessage("⚠️ Network error. Please try again.", true);
   });
 }
 </script>

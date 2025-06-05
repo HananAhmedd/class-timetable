@@ -145,7 +145,7 @@ if ($hour < 12) {
       background: #f0f0f0;
     }
     .logout-btn {
-      background-color: #ff5c5c;
+      background-color:rgb(29, 27, 63);
       color: #fff;
       padding: 10px 20px;
       border-radius: 8px;
@@ -157,7 +157,7 @@ if ($hour < 12) {
       transition: all 0.3s ease;
     }
     .logout-btn:hover {
-      background-color: #ff3333;
+      background-color:rgb(120, 106, 171);
     }
     .quote-box {
       background: rgba(255, 255, 255, 0.15);
